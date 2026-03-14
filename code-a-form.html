@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODE A — Siriraj Piyamaharajkarun Hospital</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0f4f8; --card:#fff; --border:#d0d9e4; --text:#1a2535; --muted:#5a6a7e;
+  --blue:#1a5fa8; --teal:#0e8a7c; --red:#c0392b; --green:#1a7a4a;
+  --radius:12px; --shadow:0 2px 18px rgba(26,95,168,.08);
+  --sec-patient:#e8f0fb; --sec-pre:#fdf3e3; --sec-cpr:#e6f7f0;
+  --sec-post:#fff8e1; --sec-verbal:#f5f0fb; --sec-outcome:#fce8e8;
+  --hl:#fff9c4; --hl-border:#f0c040;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun','IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 12px 80px;}
+
+.page-header{background:linear-gradient(135deg,#1a5fa8,#0e8a7c);border-radius:var(--radius);padding:28px 36px 22px;margin-bottom:16px;display:flex;align-items:center;gap:20px;box-shadow:0 6px 30px rgba(26,95,168,.22);position:relative;overflow:hidden;}
+.page-header::before{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:rgba(255,255,255,.06);border-radius:50%;}
+.header-logo{width:58px;height:58px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:2px solid rgba(255,255,255,.25);}
+.header-text h1{color:#fff;font-size:1.6rem;font-weight:800;letter-spacing:.02em;font-family:'Space Mono',monospace;}
+.header-text p{color:rgba(255,255,255,.76);font-size:.88rem;margin-top:4px;line-height:1.5;}
+
+.progress-wrap{max-width:960px;margin:0 auto 16px;}
+.progress-meta{display:flex;justify-content:space-between;margin-bottom:5px;}
+.progress-label{font-size:.78rem;color:var(--muted);}
+.progress-pct{font-size:.78rem;font-weight:700;color:var(--blue);font-family:'Space Mono',monospace;}
+.progress-track{background:#d8e4f0;border-radius:20px;height:7px;overflow:hidden;}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#1a5fa8,#0e8a7c);border-radius:20px;transition:width .4s;}
+
+/* HN bar */
+.hn-bar{max-width:960px;margin:0 auto 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow);}
+.hn-bar label{font-size:.82rem;color:var(--muted);font-weight:600;white-space:nowrap;}
+.hn-bar input{border:1.5px solid var(--border);border-radius:6px;padding:7px 11px;font-family:inherit;font-size:.88rem;outline:none;color:var(--text);background:#f8fbff;width:180px;transition:border-color .15s;}
+.hn-bar input:focus{border-color:var(--blue);}
+.btn-load{padding:7px 18px;border-radius:7px;border:none;background:linear-gradient(135deg,#1a5fa8,#0e8a7c);color:#fff;font-family:inherit;font-size:.84rem;font-weight:700;cursor:pointer;}
+.btn-load:hover{opacity:.9;}
+.hn-status{font-size:.79rem;font-weight:700;}
+.hn-status.ok{color:var(--green);}
+.hn-status.info{color:var(--blue);}
+
+/* Flow */
+.flow-container{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:0;}
+.phase-connector{display:flex;align-items:center;justify-content:center;height:30px;position:relative;}
+.phase-connector::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border);transform:translateX(-50%);}
+.conn-label{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:2px 14px;font-size:.72rem;color:var(--muted);font-weight:600;position:relative;z-index:1;white-space:nowrap;}
+.phase-connector.done::before{background:var(--green);}
+.phase-connector.done .conn-label{background:#e6f7f0;border-color:#b7dfc9;color:var(--green);}
+
+/* Phase wrapper */
+.phase-wrapper{position:relative;margin-bottom:2px;}
+
+/* Phase header */
+.phase-header-bar{border-radius:var(--radius) var(--radius) 0 0;padding:13px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.phase-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;font-family:'Space Mono',monospace;}
+.phase-title{font-weight:700;font-size:.94rem;}
+.phase-sub{font-size:.76rem;opacity:.75;margin-top:1px;}
+.phase-team{padding:3px 11px;border-radius:12px;font-size:.73rem;font-weight:700;white-space:nowrap;}
+.done-badge{display:none;align-items:center;gap:5px;padding:3px 11px;border-radius:12px;font-size:.73rem;font-weight:700;background:#e6f7f0;color:var(--green);border:1px solid #b7dfc9;margin-left:auto;}
+.done-badge.show{display:flex;}
+
+.ph-s13 .phase-header-bar{background:linear-gradient(90deg,#dbeafe,#e8f0fb);color:#1a3a6a;}
+.ph-s13 .phase-num{background:#1a5fa8;color:#fff;}
+.ph-s13 .phase-team{background:#1a5fa8;color:#fff;}
+.ph-s4  .phase-header-bar{background:linear-gradient(90deg,#e1f5ee,#e6f7f0);color:#0e5a3a;}
+.ph-s4  .phase-num{background:#0e8a7c;color:#fff;}
+.ph-s4  .phase-team{background:#0e8a7c;color:#fff;}
+.ph-s5  .phase-header-bar{background:linear-gradient(90deg,#fce8e8,#fdf3e3);color:#7a2a2a;}
+.ph-s5  .phase-num{background:#c0392b;color:#fff;}
+.ph-s5  .phase-team{background:#c0392b;color:#fff;}
+
+/* Phase card */
+.phase-card{background:var(--card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow);}
+.phase-card .section-card{border-radius:0;box-shadow:none;border:none;border-bottom:1px solid var(--border);}
+.phase-card .section-card:last-of-type{border-bottom:none;}
+
+/* Save bar */
+.save-bar{padding:13px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--border);}
+.fb-group{display:flex;align-items:center;gap:7px;flex:1;}
+.fb-group label{font-size:.78rem;color:var(--muted);font-weight:600;white-space:nowrap;}
+.fb-group input{border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:.84rem;color:var(--text);background:#f8fbff;outline:none;width:170px;transition:border-color .15s;}
+.fb-group input:focus{border-color:var(--blue);}
+.save-ind{font-size:.74rem;color:var(--muted);}
+.save-ind.ok{color:var(--green);}
+.save-ind.busy{color:var(--blue);}
+
+/* Sub save bar (periods) */
+.sub-save-bar{padding:11px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:2px dashed var(--border);background:#fafbfc;}
+
+/* Lock overlay */
+.lock-overlay{position:absolute;inset:0;background:rgba(235,240,248,.9);z-index:10;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);flex-direction:column;gap:8px;}
+.lock-overlay.open{display:none;}
+.lock-icon{font-size:1.8rem;}
+.lock-msg{font-size:.88rem;font-weight:700;color:var(--muted);text-align:center;padding:0 24px;}
+.lock-sub{font-size:.76rem;color:var(--muted);text-align:center;}
+
+/* Section cards */
+.section-card{background:var(--card);overflow:hidden;}
+.section-header{display:flex;align-items:center;gap:10px;padding:13px 20px;font-weight:700;font-size:.94rem;cursor:pointer;user-select:none;transition:filter .15s;}
+.section-header:hover{filter:brightness(.97);}
+.section-header .s-icon{font-size:1.1rem;}
+.section-header .toggle{margin-left:auto;font-size:.9rem;transition:transform .22s;}
+.section-header.collapsed .toggle{transform:rotate(-90deg);}
+.section-body{padding:4px 20px 18px;}
+.section-body.hidden{display:none;}
+.sec-patient .section-header{background:var(--sec-patient);color:#1a3a6a;}
+.sec-pre .section-header{background:var(--sec-pre);color:#7a4a00;}
+.sec-cpr .section-header{background:var(--sec-cpr);color:#0e5a3a;}
+.sec-post-initial .section-header{background:linear-gradient(90deg,#fff8e1,#fffde7);color:#7a5a00;}
+.sec-post-cont .section-header{background:linear-gradient(90deg,#fffde7,#fff8e1);color:#7a5a00;}
+.sec-verbal .section-header{background:var(--sec-verbal);color:#4a2a7a;}
+.sec-outcome .section-header{background:var(--sec-outcome);color:var(--red);}
+
+/* Fields */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;padding-top:12px;}
+.field-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.field-row.cols-1{grid-template-columns:1fr;}
+.field-group{display:flex;flex-direction:column;gap:5px;}
+label{font-size:.80rem;color:var(--muted);font-weight:600;}
+label .req{color:var(--red);}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;font-family:inherit;font-size:.88rem;color:var(--text);background:#f8fbff;outline:none;width:100%;transition:border-color .15s,box-shadow .15s,background .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,95,168,.10);background:#fff;}
+input:disabled{background:#eee;color:#999;cursor:not-allowed;}
+textarea{resize:vertical;min-height:60px;}
+
+/* YN */
+.yn-row{display:flex;align-items:flex-start;gap:14px;padding:10px 0;border-bottom:1px solid #f0f4f8;}
+.yn-row:last-child{border-bottom:none;}
+.yn-row .row-label{flex:1;font-size:.875rem;line-height:1.5;padding-top:3px;}
+.yn-row .row-label .sub{font-size:.75rem;color:var(--muted);display:block;margin-top:2px;}
+.yn-row.hl{background:var(--hl);border-left:3px solid var(--hl-border);padding-left:10px;border-radius:5px;margin:2px 0;}
+.yn-group{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;padding:2px 0;}
+.yn-btn{padding:5px 17px;border-radius:20px;border:1.5px solid var(--border);background:#f4f7fb;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .13s;white-space:nowrap;}
+.yn-btn.y:hover,.yn-btn.y.active{background:#d4edda;border-color:#27ae60;color:#1a7a3a;}
+.yn-btn.n:hover,.yn-btn.n.active{background:#fde8e8;border-color:#e74c3c;color:#a0231a;}
+.yn-btn.na{font-size:.78rem;}
+.yn-btn.na:hover,.yn-btn.na.active{background:#e8e8e8;border-color:#888;color:#444;}
+
+.sub-title{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 5px;display:flex;align-items:center;gap:6px;}
+.sub-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.badge{display:inline-block;padding:2px 11px;border-radius:12px;font-size:.72rem;font-weight:700;}
+.badge-yellow{background:#fff3cd;color:#7a5a00;border:1px solid #f0c040;}
+.auto-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:16px;font-size:.79rem;font-weight:600;margin-top:5px;}
+.auto-badge.blue{background:#dbeafe;color:#1a5fa8;border:1px solid #93c5fd;}
+.notice{border-radius:8px;padding:11px 15px;font-size:.86rem;line-height:1.55;}
+.notice.yellow{background:#fff8e1;border:1px solid #f0c040;color:#7a5a00;}
+.notice.blue{background:#e8f0fb;border:1px solid #93c5fd;color:#1a3a6a;}
+.notice.purple{background:#f5f0fb;border:1px solid #c4b5fd;color:#4a2a7a;}
+.cond-extra{margin-top:8px;animation:fadeIn .22s ease;}
+.icu-block{margin-top:12px;background:#eef4ff;border-left:3px solid var(--blue);padding:13px 15px;border-radius:7px;}
+.codea-block{margin-top:8px;background:#f4f8ff;border-radius:9px;border:1px solid #c5d8f5;padding:14px 16px 12px;}
+
+/* Period */
+.period-hdr{padding:11px 20px;display:flex;align-items:center;gap:10px;background:#fafbfc;border-top:2px dashed var(--border);flex-wrap:wrap;}
+.period-tag{padding:3px 11px;border-radius:12px;font-size:.74rem;font-weight:700;}
+.p1-tag{background:#dbeafe;color:#1a3a6a;border:1px solid #93c5fd;}
+.p2-tag{background:#fce8e8;color:#7a2a2a;border:1px solid #f5b7b1;}
+.period-done{display:none;font-size:.73rem;color:var(--green);font-weight:700;}
+.period-done.show{display:inline-flex;align-items:center;gap:4px;}
+
+/* Buttons */
+.btn{padding:8px 22px;border-radius:8px;border:none;font-family:inherit;font-size:.87rem;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-primary{background:linear-gradient(135deg,#1a5fa8,#0e8a7c);color:#fff;box-shadow:0 3px 10px rgba(26,95,168,.2);}
+.btn-primary:hover{opacity:.91;transform:translateY(-1px);}
+.btn-secondary{background:#f4f7fb;color:var(--muted);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:#e8edf5;}
+.btn-success{background:linear-gradient(135deg,#1a7a4a,#0e8a7c);color:#fff;box-shadow:0 3px 10px rgba(14,138,124,.2);}
+.btn-success:hover{opacity:.91;transform:translateY(-1px);}
+.btn-warn{background:#fff3cd;color:#7a5a00;border:1.5px solid #f0c040;font-size:.78rem;padding:5px 13px;}
+.btn-warn:hover{background:#fde9a2;}
+.btn-sm{padding:5px 14px;font-size:.78rem;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:640px){
+  .field-row{grid-template-columns:1fr;}
+  .field-row.cols-3{grid-template-columns:1fr 1fr;}
+  .yn-row{flex-direction:column;}
+  .yn-row .yn-group{align-self:flex-start;}
+  .page-header{padding:20px 18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-logo">🫀</div>
+  <div class="header-text">
+    <h1>CODE A</h1>
+    <p>แบบบันทึกการดูแลผู้ป่วยหลัง Cardiac Arrest<br>Siriraj Piyamaharajkarun Hospital</p>
+  </div>
+</div>
+
+<!-- HN Loader -->
+<div class="hn-bar">
+  <label>🔍 HN ผู้ป่วย:</label>
+  <input type="text" id="hn-input" placeholder="ระบุ HN เพื่อโหลด / บันทึก" autocomplete="off">
+  <button class="btn-load" onclick="loadByHN()">โหลด / เริ่มใหม่</button>
+  <span class="hn-status" id="hn-status"></span>
+  <span style="font-size:.73rem;color:var(--muted);margin-left:auto;">ข้อมูลบันทึกเฉพาะเบราว์เซอร์นี้เท่านั้น</span>
+</div>
+
+<!-- Progress -->
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span class="progress-label" id="progressLabel">กรอกข้อมูล 0 / 0 ช่อง</span>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+  <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+</div>
+
+<div class="flow-container">
+
+<!-- ══════ PHASE 1: Section 1–3 ══════ -->
+<div class="phase-wrapper ph-s13" id="phase-s13">
+  <div class="phase-header-bar">
+    <div class="phase-num">1</div>
+    <div>
+      <div class="phase-title">Section 1–3 &nbsp;·&nbsp; ข้อมูลผู้ป่วย / Pre-Arrest / CPR Quality</div>
+      <div class="phase-sub">กรอกให้เสร็จภายใน 24 ชั่วโมง</div>
+    </div>
+    <span class="phase-team">ทีม Code A +/- พยาบาล (IPD/OPD)  &nbsp;|&nbsp; 1–2 คน</span>
+    <div class="done-badge" id="done-badge-s13">✅ <span id="done-text-s13"></span></div>
+    <button class="btn btn-warn" id="edit-btn-s13" style="display:none" onclick="editPhase('s13')">✏️ แก้ไข</button>
+  </div>
+  <div class="phase-card">
+
+    <!-- 1. Patient Info -->
+    <div class="section-card sec-patient">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">🧑‍⚕️</span> ข้อมูลผู้ป่วย (Patient Information)<span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="field-row">
+          <div class="field-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="pat-date"></div>
+          <div class="field-group"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="pat-name" placeholder="ชื่อ นามสกุล"></div>
+        </div>
+        <div class="field-row cols-3">
+          <div class="field-group"><label>HN <span class="req">*</span></label><input type="text" id="pat-hn" placeholder="เลขที่ HN" oninput="syncHNFromField(this.value)"></div>
+          <div class="field-group"><label>อายุ (ปี)</label><input type="number" id="pat-age" placeholder="อายุ" min="0" max="120"></div>
+          <div class="field-group"><label>เพศ</label><select id="pat-sex"><option value="">-- เลือก --</option><option>ชาย</option><option>หญิง</option></select></div>
+        </div>
+        <div class="field-row cols-1">
+          <div class="field-group"><label>Location (Ward / Unit)</label>
+            <select id="pat-loc">
+              <option value="">-- เลือก Location --</option>
+              <optgroup label="Ward"><option>Ward 10A</option><option>Ward 10B</option><option>Ward 10C</option><option>Ward 11A</option><option>Ward 11B</option><option>Ward 11C</option><option>Ward 12A</option><option>Ward 12B</option><option>Ward 12C</option><option>Ward 14A</option><option>Ward 14B</option><option>Ward 14C</option><option>Ward 15A</option><option>Ward 15B</option><option>Ward 15C</option></optgroup>
+              <optgroup label="Critical Care / Emergency"><option>ER</option><option>ICU A</option><option>ICU B</option><option>ICU D</option><option>CCU</option><option>RCU</option></optgroup>
+              <optgroup label="Specialty Units"><option>Cancer/Onco</option><option>X-ray</option><option>Gynae</option><option>Med</option><option>Ortho</option><option>Surg</option><option>Allergy</option><option>Chest center</option><option>Dental</option><option>ENT</option><option>OR Minor</option><option>Ped</option><option>PM&amp;R/PT</option><option>Skin/Plastic</option></optgroup>
+              <optgroup label="Clinics &amp; Centers"><option>Cardiac Rehab</option><option>Cardio</option><option>Check Up</option><option>DM</option><option>GI Clinic</option><option>GI Scope</option><option>EYE</option><option>URO</option><option>Cath Lab</option><option>Nephro</option></optgroup>
+              <optgroup label="OR / Recovery"><option>OR</option><option>RR</option></optgroup>
+              <optgroup label="อื่นๆ"><option>รังสีศัลยกรรม</option><option>SiMR</option><option>แพทย์แผนไทย</option></optgroup>
+            </select>
+          </div>
+          <div class="field-group" style="margin-top:10px"><label>Location อื่นๆ</label><input type="text" id="pat-loc-other" placeholder="ระบุ Location เพิ่มเติม..."></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Pre-Arrest -->
+    <div class="section-card sec-pre">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">⏱️</span> ข้อมูลก่อน Arrest (Pre-Arrest Information)<span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="field-row">
+          <div class="field-group"><label>เวลา Arrest</label><input type="time" id="pre-time-arrest"></div>
+          <div class="field-group"><label>เวลาเริ่มกดหน้าอก</label><input type="time" id="pre-time-cpr"></div>
+        </div>
+        <div class="yn-row" style="margin-top:10px;background:#eef4ff;border-left:3px solid var(--blue);padding-left:12px;border-radius:5px;">
+          <span class="row-label" style="font-weight:700;color:#1a3a6a;">ประกาศ Code A<span class="sub">YES = กรอกด้านล่าง &nbsp;|&nbsp; NO = ข้ามไปหมวด CPR Quality</span></span>
+          <div class="yn-group" data-yn="pre-codea">
+            <button class="yn-btn y" data-val="yes" onclick="toggleCodeA(this,'yes')">YES</button>
+            <button class="yn-btn n" data-val="no" onclick="toggleCodeA(this,'no')">NO</button>
+          </div>
+        </div>
+        <div id="codeA-yes-fields" style="display:none" class="codea-block">
+          <div class="sub-title" style="color:var(--blue);margin-top:0">📋 รายละเอียด Code A</div>
+          <div class="field-row">
+            <div class="field-group"><label>เวลาตาม Code A</label><input type="time" id="pre-codea-time"></div>
+            <div class="field-group"><label>เวลาแพทย์ Code A มาถึง</label><input type="time" id="pre-codea-dr"></div>
+          </div>
+          <div class="yn-row" style="border-bottom:1px solid #dce8f8">
+            <span class="row-label">ตาม MRT ก่อน Arrest หรือไม่</span>
+            <div class="yn-group" data-yn="pre-mrt">
+              <button class="yn-btn y" data-val="yes" onclick="toggleMRT(this,'yes')">YES</button>
+              <button class="yn-btn n" data-val="no" onclick="toggleMRT(this,'no')">NO</button>
+            </div>
+          </div>
+          <div id="mrt-time-field" style="display:none;margin-top:8px">
+            <div class="field-group" style="max-width:200px"><label>เวลาตาม MRT</label><input type="time" id="pre-mrt-time"></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="font-size:.80rem;color:var(--muted);font-weight:600">NEWS/MEWS ล่าสุดก่อน Arrest (คะแนน)</label>
+            <div style="display:flex;gap:12px;align-items:center;margin-top:7px;flex-wrap:wrap">
+              <input type="number" id="pre-newsmews" placeholder="ระบุคะแนน" min="0" max="20" style="width:150px" oninput="onNewsMews(this)">
+              <label style="display:flex;align-items:center;gap:7px;font-size:.86rem;cursor:pointer;color:var(--muted);font-weight:500">
+                <input type="checkbox" id="pre-newsmews-na" onchange="onNewsMewsNA(this)" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+                Critical Unit (N/A)
+              </label>
+              <span id="pre-newsmews-display" style="font-size:.82rem;color:var(--blue);font-weight:700"></span>
+            </div>
+          </div>
+        </div>
+        <div id="codeA-no-msg" style="display:none;margin-top:8px" class="notice yellow">⏭️ <strong>ไม่มีการประกาศ Code A</strong> — กรุณาดำเนินการกรอกในหมวด <strong>CPR Quality</strong> ด้านล่าง</div>
+      </div>
+    </div>
+
+    <!-- 3. CPR Quality -->
+    <div class="section-card sec-cpr" id="sec-cpr">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">💪</span> CPR Quality<span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="yn-row" style="margin-top:6px">
+          <span class="row-label">Epinephrine dose แรก (Non Shockable rhythm) &le; 3 นาที</span>
+          <div class="yn-group" data-yn="cpr-epi"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">Defibrillation ใน Shockable rhythm ใน 10 วินาที</span>
+          <div class="yn-group" data-yn="cpr-defib"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">ติดอุปกรณ์ Feedback Device (Q CPR) ภายใน 4 นาที</span>
+          <div class="yn-group" data-yn="cpr-feedback"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">กดหน้าอกได้ลึก 5–6 cm.</span>
+          <div class="yn-group" data-yn="cpr-depth"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">กดหน้าอกอัตราเร็ว 100–120 ครั้ง/นาที (Push Fast)</span>
+          <div class="yn-group" data-yn="cpr-rate"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">ปล่อยหน้าอกให้คืนตัว (Fully recoil)</span>
+          <div class="yn-group" data-yn="cpr-recoil"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">ช่วยหายใจในอัตรา 30:2<span class="sub">กรณียังไม่ได้ท่อช่วยหายใจ หรือ 10 ครั้ง/นาที (ทุก 6 วินาที) / กรณีได้ท่อช่วยหายใจแล้ว</span></span>
+          <div class="yn-group" data-yn="cpr-ventilation"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">มีการเปลี่ยนหน้า chest compression ทุก 2 นาที</span>
+          <div class="yn-group" data-yn="cpr-rotation"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">EtCO2 &gt; 10 mmHg</span>
+          <div class="yn-group" data-yn="cpr-etco2"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button><button class="yn-btn na" data-val="na" onclick="simpleToggle(this)">N/A</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">ROSC — ถ้า YES ไปต่อข้างล่าง</span>
+          <div class="yn-group" data-yn="cpr-rosc"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">Sustained ROSC &ge; 20 min.</span>
+          <div class="yn-group" data-yn="cpr-sustained"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save bar S13 -->
+    <div class="save-bar" style="background:#f0f6ff;border-top:2px solid #c5d8f5">
+      <div class="fb-group"><label>ผู้กรอก:</label><input type="text" id="filledby-s13" placeholder="ชื่อ / ตำแหน่ง"></div>
+      <span class="save-ind" id="ind-s13"></span>
+      <button class="btn btn-secondary btn-sm" onclick="tempSave('s13')">💾 บันทึกชั่วคราว</button>
+      <button class="btn btn-success" onclick="completePhase('s13')">✅ บันทึก Section 1–3 &amp; ส่งต่อ ICU</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 1→2 -->
+<div class="phase-connector" id="conn12">
+  <span class="conn-label" id="conn12-label">Section 4 จะเปิดหลังจาก Section 1–3 บันทึกเสร็จ</span>
+</div>
+
+<!-- ══════ PHASE 2: Section 4 ══════ -->
+<div class="phase-wrapper ph-s4" id="phase-s4">
+  <div class="lock-overlay" id="lock-s4"><div class="lock-icon">🔒</div><div class="lock-msg">Section 4 — Post Arrest Care</div><div class="lock-sub">รอ Section 1–3 บันทึกเสร็จก่อน</div></div>
+  <div class="phase-header-bar">
+    <div class="phase-num">2</div>
+    <div><div class="phase-title">Section 4 &nbsp;·&nbsp; Post Arrest Care</div><div class="phase-sub">Initial / Continuous / Follow to Verbal Command</div></div>
+    <span class="phase-team">ทีม ICU</span>
+    <div class="done-badge" id="done-badge-s4">✅ <span id="done-text-s4"></span></div>
+    <button class="btn btn-warn" id="edit-btn-s4" style="display:none" onclick="editPhase('s4')">✏️ แก้ไข</button>
+  </div>
+  <div class="phase-card">
+
+    <!-- 4a Post Arrest Initial -->
+    <div class="section-card sec-post-initial" id="sec-post-initial">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">🏥</span> Post Arrest Care — Initial <span class="badge badge-yellow" style="margin-left:8px">หลัง ROSC ทันที</span><span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="field-group" style="padding-top:12px"><label>Post cardiac arrest: Initial (บันทึกเพิ่มเติม)</label><textarea id="post-init-notes" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+        <div class="yn-row" style="margin-top:4px">
+          <span class="row-label">Monitor EtCO2</span>
+          <div class="yn-group" data-yn="pi-etco2"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">SpO2 90–98% หรือ PaO2 60–105 จาก ABG</span>
+          <div class="yn-group" data-yn="pi-spo2"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','pi-spo2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','pi-spo2-x')">NO</button></div>
+        </div>
+        <div id="pi-spo2-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:320px"><label>FiO2 ตอนเจาะ</label><input type="text" id="pi-fio2" placeholder="ระบุ FiO2"></div></div>
+        <div class="yn-row">
+          <span class="row-label">PaCO2 35–45 หรือ EtCO2 30–40 mmHg</span>
+          <div class="yn-group" data-yn="pi-paco2"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','pi-paco2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','pi-paco2-x')">NO</button></div>
+        </div>
+        <div id="pi-paco2-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:320px"><label>pH จาก ABG</label><input type="text" id="pi-ph" placeholder="ระบุค่า pH จาก ABG"></div></div>
+        <div class="yn-row">
+          <span class="row-label">MAP &ge; 65 mmHg ชั่วโมงแรก</span>
+          <div class="yn-group" data-yn="pi-map"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','pi-map-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','pi-map-x')">NO</button></div>
+        </div>
+        <div id="pi-map-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:340px"><label>Vasopressor ที่ให้</label><input type="text" id="pi-vaso" placeholder="ระบุ Vasopressor ที่ให้"></div></div>
+        <div class="yn-row">
+          <span class="row-label">มีการทำ EKG หลัง ROSC / Point of Care Ultrasound หรือ Echocardiography Bedside</span>
+          <div class="yn-group" data-yn="pi-ekg"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="field-group" style="margin-top:12px"><label>Cause of cardiac arrest</label><input type="text" id="pi-cause" placeholder="ระบุสาเหตุ"></div>
+        <div class="icu-block">
+          <div style="font-weight:700;color:#1a3a6a;font-size:.95rem;margin-bottom:3px">ICU admission หลัง ROSC</div>
+          <div style="font-size:.78rem;color:#3a5a8a;margin-bottom:10px;line-height:1.5">YES = ไปทำที่ Post Arrest Care: Continuous &nbsp;|&nbsp; NO = ให้ไปทำที่ Follow to Verbal Command</div>
+          <div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap">
+            <div class="field-group" style="min-width:180px"><label>Location ที่ Admission <span class="req">*</span></label>
+              <select id="pi-icu-loc"><option value="">-- เลือก --</option><option>ICU A</option><option>ICU B</option><option>ICU D</option><option>CCU</option><option>RCU</option></select>
+            </div>
+            <div class="field-group"><label>ICU Admission</label>
+              <div class="yn-group" data-yn="pi-icu" style="padding-top:2px">
+                <button class="yn-btn y" data-val="yes" onclick="toggleICU(this,'yes')">YES</button>
+                <button class="yn-btn n" data-val="no" onclick="toggleICU(this,'no')">NO</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4b Post Arrest Continuous -->
+    <div class="section-card sec-post-cont" id="sec-post-cont">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">🔄</span> Post Arrest Care — Continuous <span class="badge badge-yellow" style="margin-left:8px">ติดตามต่อเนื่อง (ICU)</span><span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="notice blue" style="margin-top:10px;margin-bottom:4px;font-size:.84rem">ℹ️ ถ้า ICU admission = YES ให้ตอบ 5 ข้อนี้ &nbsp;|&nbsp; ถ้า NO หรือรายการใด = <strong>NO</strong> → <strong>Follow to Verbal Command</strong></div>
+        <div class="yn-row hl" style="margin-top:8px">
+          <span class="row-label">SpO2 90–98% หรือ PaO2 60–105 จาก ABG<span class="sub">NO = ไปที่ Follow to Verbal Command</span></span>
+          <div class="yn-group" data-yn="pc-spo2"><button class="yn-btn y" data-val="yes" onclick="tPostCont(this,'yes','pc-spo2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tPostCont(this,'no','pc-spo2-x')">NO</button></div>
+        </div>
+        <div id="pc-spo2-x" style="display:none" class="cond-extra"><span class="auto-badge blue">📋 1st Document at ICU</span></div>
+        <div class="yn-row hl">
+          <span class="row-label">PaCO2 35–45 หรือ EtCO2 30–40 mmHg<span class="sub">NO = ระบุ pH จาก ABG &amp; ไปที่ Follow to Verbal Command</span></span>
+          <div class="yn-group" data-yn="pc-paco2"><button class="yn-btn y" data-val="yes" onclick="tPostCont(this,'yes','pc-paco2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tPostCont(this,'no','pc-paco2-x')">NO</button></div>
+        </div>
+        <div id="pc-paco2-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:320px"><label>pH จาก ABG (1st Doc at ICU) <span class="req">*</span></label><input type="text" id="pc-ph" placeholder="ระบุค่า pH"></div></div>
+        <div class="yn-row hl">
+          <span class="row-label">MAP &ge; 65 mmHg ชั่วโมงแรก<span class="sub">NO = ไปที่ Follow to Verbal Command</span></span>
+          <div class="yn-group" data-yn="pc-map"><button class="yn-btn y" data-val="yes" onclick="tPostCont(this,'yes',null)">YES</button><button class="yn-btn n" data-val="no" onclick="tPostCont(this,'no',null)">NO</button></div>
+        </div>
+        <div class="yn-row hl">
+          <span class="row-label">Blood Glucose 70–180 mg/dl or Insulin Therapy<span class="sub">NO = ไปที่ Follow to Verbal Command</span></span>
+          <div class="yn-group" data-yn="pc-glucose"><button class="yn-btn y" data-val="yes" onclick="tPostCont(this,'yes',null)">YES</button><button class="yn-btn n" data-val="no" onclick="tPostCont(this,'no',null)">NO</button></div>
+        </div>
+        <div class="yn-row hl">
+          <span class="row-label">Urine &ge; 0.5 ml/kg/hr ใน 2hr แรกหลัง ROSC<span class="sub">NO = ไปที่ Follow to Verbal Command</span></span>
+          <div class="yn-group" data-yn="pc-urine"><button class="yn-btn y" data-val="yes" onclick="tPostCont(this,'yes',null)">YES</button><button class="yn-btn n" data-val="no" onclick="tPostCont(this,'no',null)">NO</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4c Follow to Verbal Command -->
+    <div class="section-card sec-verbal" id="sec-verbal">
+      <div class="section-header" onclick="toggleSection(this)"><span class="s-icon">🧠</span> Follow to Verbal Command<span class="toggle">▾</span></div>
+      <div class="section-body">
+        <div class="notice purple" style="margin-top:10px;margin-bottom:4px;font-size:.84rem">📌 กรอกส่วนนี้เมื่อผู้ป่วยไม่ตอบสนองต่อ Follow to Verbal Command<br>หรือเมื่อ ICU admission = NO / Post Arrest Continuous มีรายการใด = NO</div>
+        <div class="yn-row" style="margin-top:8px">
+          <span class="row-label">SpO2 90–98% หรือ PaO2 60–105 จาก ABG</span>
+          <div class="yn-group" data-yn="vb-spo2"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','vb-spo2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','vb-spo2-x')">NO</button></div>
+        </div>
+        <div id="vb-spo2-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:320px"><label>FiO2 ตอนเจาะ</label><input type="text" id="vb-fio2" placeholder="ระบุ FiO2"></div></div>
+        <div class="yn-row">
+          <span class="row-label">PaCO2 35–45 หรือ EtCO2 30–40 mmHg</span>
+          <div class="yn-group" data-yn="vb-paco2"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','vb-paco2-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','vb-paco2-x')">NO</button></div>
+        </div>
+        <div id="vb-paco2-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:320px"><label>pH จาก ABG</label><input type="text" id="vb-ph" placeholder="ระบุค่า pH จาก ABG"></div></div>
+        <div class="yn-row">
+          <span class="row-label">มีการเขียน keep MAP &ge; 65 mmHg</span>
+          <div class="yn-group" data-yn="vb-map"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'yes','vb-map-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'no','vb-map-x')">NO</button></div>
+        </div>
+        <div id="vb-map-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:340px"><label>Vasopressor ที่ให้</label><input type="text" id="vb-vaso" placeholder="ระบุ Vasopressor"></div></div>
+        <div class="yn-row">
+          <span class="row-label">Blood Glucose 70–180 mg/dl or Insulin Therapy</span>
+          <div class="yn-group" data-yn="vb-glucose"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">Urine &ge; 0.5 ml/kg/hr ใน 2hr แรกหลัง ROSC</span>
+          <div class="yn-group" data-yn="vb-urine"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="sub-title" style="margin-top:16px"><span>🌡️</span> Temperature Control</div>
+        <div class="yn-row">
+          <span class="row-label">1. Core temperature monitoring (Esophageal Probe, Bladder Probe, PA Cath)</span>
+          <div class="yn-group" data-yn="vb-temp-core"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row">
+          <span class="row-label">2. มีการใช้ Arctic Sun</span>
+          <div class="yn-group" data-yn="vb-arctic"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="yn-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:12px">
+          <span class="row-label" style="font-weight:600;color:#0e5a3a">3. Temperature Control Management for &ge; 72h after ROSC</span>
+          <div style="font-size:.84rem;line-height:1.6;padding:10px 13px;background:#f0faf4;border-radius:8px;border:1px solid #a7d7b8;width:100%">Core Temperature &le; 37.5°C for 72hr after ROSC <strong>หรือ</strong> Temperature 33°C หรือ 36°C for 24hr then rewarm 0.25°C/hr to 37°C+ maintain &le; 37.5°C for 72hr after ROSC</div>
+          <div class="yn-group" data-yn="vb-temp72"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div>
+        </div>
+        <div class="sub-title" style="margin-top:14px"><span>🧬</span> Neuro Assessment</div>
+        <div class="yn-row"><span class="row-label">Consult Neuro Med</span><div class="yn-group" data-yn="vb-neuro"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div></div>
+        <div class="yn-row"><span class="row-label">EEG monitoring</span><div class="yn-group" data-yn="vb-eeg"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div></div>
+        <div class="yn-row"><span class="row-label">Brain imaging: CT หรือ MRI เมื่อ stable</span><div class="yn-group" data-yn="vb-brain"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div></div>
+        <div class="yn-row"><span class="row-label">Pupillometry used</span><div class="yn-group" data-yn="vb-pupil"><button class="yn-btn y" data-val="yes" onclick="simpleToggle(this)">YES</button><button class="yn-btn n" data-val="no" onclick="simpleToggle(this)">NO</button></div></div>
+        <div class="sub-title" style="margin-top:14px"><span>🧪</span> Lab NSE</div>
+        <div class="yn-row"><span class="row-label">NSE at 24hr after ROSC</span><div class="yn-group" data-yn="vb-nse24"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'no','nse24-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'yes','nse24-x')">NO</button></div></div>
+        <div id="nse24-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:260px"><label>ค่า NSE (ng/mL)</label><input type="number" id="vb-nse24" placeholder="ระบุค่า NSE" step="0.01" min="0"></div></div>
+        <div class="yn-row"><span class="row-label">NSE at 48hr after ROSC</span><div class="yn-group" data-yn="vb-nse48"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'no','nse48-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'yes','nse48-x')">NO</button></div></div>
+        <div id="nse48-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:260px"><label>ค่า NSE (ng/mL)</label><input type="number" id="vb-nse48" placeholder="ระบุค่า NSE" step="0.01" min="0"></div></div>
+        <div class="yn-row"><span class="row-label">NSE at 72hr after ROSC</span><div class="yn-group" data-yn="vb-nse72"><button class="yn-btn y" data-val="yes" onclick="tShow(this,'no','nse72-x')">YES</button><button class="yn-btn n" data-val="no" onclick="tShow(this,'yes','nse72-x')">NO</button></div></div>
+        <div id="nse72-x" style="display:none" class="cond-extra"><div class="field-group" style="max-width:260px"><label>ค่า NSE (ng/mL)</label><input type="number" id="vb-nse72" placeholder="ระบุค่า NSE" step="0.01" min="0"></div></div>
+      </div>
+    </div>
+
+    <!-- Save bar S4 -->
+    <div class="save-bar" style="background:#f0faf8;border-top:2px solid #9fe1cb">
+      <div class="fb-group"><label>ผู้กรอก (ICU):</label><input type="text" id="filledby-s4" placeholder="ชื่อ / ตำแหน่ง"></div>
+      <span class="save-ind" id="ind-s4"></span>
+      <button class="btn btn-secondary btn-sm" onclick="tempSave('s4')">💾 บันทึกชั่วคราว</button>
+      <button class="btn btn-success" onclick="completePhase('s4')">✅ บันทึก Section 4 &amp; ส่งต่อ Outcome</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 2→3 -->
+<div class="phase-connector" id="conn23">
+  <span class="conn-label" id="conn23-label">Section 5 จะเปิดหลังจาก Section 4 บันทึกเสร็จ</span>
+</div>
+
+<!-- ══════ PHASE 3: Section 5 — Outcome ══════ -->
+<div class="phase-wrapper ph-s5" id="phase-s5">
+  <div class="lock-overlay" id="lock-s5"><div class="lock-icon">🔒</div><div class="lock-msg">Section 5 — Outcome</div><div class="lock-sub">รอ Section 4 บันทึกเสร็จก่อน</div></div>
+  <div class="phase-header-bar">
+    <div class="phase-num">3</div>
+    <div><div class="phase-title">Section 5 &nbsp;·&nbsp; Outcome &amp; Follow-up</div><div class="phase-sub">แบ่งเป็น 2 ช่วงเวลา — 1 สัปดาห์ และ 30 วัน</div></div>
+    <span class="phase-team">ทีม ICU / Ward / Code (โทรตามคนไข้)</span>
+  </div>
+  <div class="phase-card">
+
+    <!-- Period 1 -->
+    <div class="period-hdr" style="border-top:none">
+      <span class="period-tag p1-tag">📅 Period 1 — 1 สัปดาห์หลัง ROSC</span>
+      <span class="period-done" id="done-p1">✅ <span id="done-text-p1"></span></span>
+      <button class="btn btn-warn" id="edit-btn-p1" style="display:none" onclick="editPeriod('p1')">✏️ แก้ไข</button>
+    </div>
+    <div class="section-card sec-outcome">
+      <div class="section-body" style="padding-top:14px">
+        <div class="field-group"><label>CPC at 1 week after ROSC (CPC 1–5)</label>
+          <select id="cpc-1w"><option value="">-- เลือก CPC --</option><option>CPC 1 - Good cerebral performance</option><option>CPC 2 - Moderate cerebral disability</option><option>CPC 3 - Severe cerebral disability</option><option>CPC 4 - Coma or vegetative state</option><option>CPC 5 - Death</option></select>
+        </div>
+        <div class="field-group" style="margin-top:10px"><label>หมายเหตุ Period 1</label><textarea id="notes-p1" placeholder="บันทึก 1 สัปดาห์..."></textarea></div>
+      </div>
+    </div>
+    <div class="sub-save-bar">
+      <div class="fb-group"><label>ผู้กรอก P1:</label><input type="text" id="filledby-p1" placeholder="ชื่อ / ตำแหน่ง"></div>
+      <span class="save-ind" id="ind-p1"></span>
+      <button class="btn btn-secondary btn-sm" onclick="tempSave('p1')">💾 บันทึกชั่วคราว</button>
+      <button class="btn btn-success" onclick="completePeriod('p1')">✅ บันทึก Period 1 (1 สัปดาห์)</button>
+    </div>
+
+    <!-- Period 2 (sub-locked) -->
+    <div style="position:relative">
+      <div class="lock-overlay" id="lock-p2" style="border-radius:0 0 var(--radius) var(--radius)"><div class="lock-icon" style="font-size:1.4rem">🔒</div><div class="lock-msg" style="font-size:.84rem">Period 2 จะเปิดหลังจากบันทึก Period 1</div></div>
+      <div class="period-hdr">
+        <span class="period-tag p2-tag">📅 Period 2 — 30 วันหลัง ROSC</span>
+        <span class="period-done" id="done-p2">✅ <span id="done-text-p2"></span></span>
+        <button class="btn btn-warn" id="edit-btn-p2" style="display:none" onclick="editPeriod('p2')">✏️ แก้ไข</button>
+      </div>
+      <div class="section-card sec-outcome">
+        <div class="section-body" style="padding-top:14px">
+          <div class="field-group"><label>CPC at 1 month after ROSC (CPC 1–5)</label>
+            <select id="cpc-1m"><option value="">-- เลือก CPC --</option><option>CPC 1 - Good cerebral performance</option><option>CPC 2 - Moderate cerebral disability</option><option>CPC 3 - Severe cerebral disability</option><option>CPC 4 - Coma or vegetative state</option><option>CPC 5 - Death</option></select>
+          </div>
+          <div class="field-group" style="margin-top:10px"><label>หมายเหตุ / Additional Notes</label><textarea id="notes-p2" placeholder="บันทึก 30 วัน..."></textarea></div>
+        </div>
+      </div>
+      <div class="sub-save-bar" style="border-radius:0 0 var(--radius) var(--radius)">
+        <div class="fb-group"><label>ผู้กรอก P2:</label><input type="text" id="filledby-p2" placeholder="ชื่อ / ตำแหน่ง"></div>
+        <span class="save-ind" id="ind-p2"></span>
+        <button class="btn btn-secondary btn-sm" onclick="tempSave('p2')">💾 บันทึกชั่วคราว</button>
+        <button class="btn btn-success" onclick="completePeriod('p2')">✅ บันทึก Period 2 (30 วัน)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="max-width:960px;margin:14px auto 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow)">
+  <span style="font-size:.82rem;color:var(--muted)">💾 บันทึกข้อมูลอัตโนมัติทุก 2 วินาทีหลังการเปลี่ยนแปลง</span>
+  <button class="btn btn-secondary" onclick="clearAll()">🗑️ ล้างข้อมูลทั้งหมด (HN นี้)</button>
+</div>
+
+</div><!-- /flow-container -->
+
+<script>
+/* ── State ── */
+let HN = 'draft';
+const done = {s13:false, s4:false, p1:false, p2:false};
+const autoT = {};
+
+/* ── Storage key ── */
+function sk(phase, sfx) { return 'codea-' + HN.replace(/[^a-zA-Z0-9]/g,'_') + '-' + phase + '-' + sfx; }
+
+/* ── Phase input definitions ── */
+const INP = {
+  s13: ['pat-date','pat-name','pat-hn','pat-age','pat-sex','pat-loc','pat-loc-other',
+        'pre-time-arrest','pre-time-cpr','pre-codea-time','pre-codea-dr','pre-mrt-time','pre-newsmews','filledby-s13'],
+  s4:  ['post-init-notes','pi-fio2','pi-ph','pi-vaso','pi-cause','pi-icu-loc',
+        'pc-ph','vb-fio2','vb-ph','vb-vaso','vb-nse24','vb-nse48','vb-nse72','filledby-s4'],
+  p1:  ['cpc-1w','notes-p1','filledby-p1'],
+  p2:  ['cpc-1m','notes-p2','filledby-p2'],
+};
+const YN = {
+  s13: ['pre-codea','pre-mrt','cpr-epi','cpr-defib','cpr-feedback','cpr-depth','cpr-rate','cpr-recoil','cpr-ventilation','cpr-rotation','cpr-etco2','cpr-rosc','cpr-sustained'],
+  s4:  ['pi-etco2','pi-spo2','pi-paco2','pi-map','pi-ekg','pi-icu','pc-spo2','pc-paco2','pc-map','pc-glucose','pc-urine','vb-spo2','vb-paco2','vb-map','vb-glucose','vb-urine','vb-temp-core','vb-arctic','vb-temp72','vb-neuro','vb-eeg','vb-brain','vb-pupil','vb-nse24','vb-nse48','vb-nse72'],
+  p1:  [], p2: [],
+};
+const CBS = { s13: ['pre-newsmews-na'], s4:[], p1:[], p2:[] };
+
+/* ── Collect ── */
+function collect(phase) {
+  const d = {};
+  (INP[phase]||[]).forEach(id => { const e=ge(id); if(e) d[id]=e.value; });
+  (CBS[phase]||[]).forEach(id => { const e=ge(id); if(e) d['cb_'+id]=e.checked; });
+  (YN[phase]||[]).forEach(yn => {
+    const g=qs('.yn-group[data-yn="'+yn+'"]');
+    if(g){const a=g.querySelector('.yn-btn.active'); d['yn_'+yn]=a?a.dataset.val:'';}
+  });
+  return d;
+}
+
+/* ── Restore ── */
+function restore(phase, d) {
+  if(!d) return;
+  (INP[phase]||[]).forEach(id => { const e=ge(id); if(e&&d[id]!==undefined) e.value=d[id]; });
+  (CBS[phase]||[]).forEach(id => { const e=ge(id); if(e&&d['cb_'+id]!==undefined) e.checked=d['cb_'+id]; });
+  (YN[phase]||[]).forEach(yn => {
+    const v=d['yn_'+yn]; if(!v) return;
+    const g=qs('.yn-group[data-yn="'+yn+'"]'); if(!g) return;
+    deact(g); const b=g.querySelector('.yn-btn[data-val="'+v+'"]'); if(b) b.classList.add('active');
+  });
+  restoreCond(d);
+  updateProgress();
+}
+
+function restoreCond(d) {
+  const ca=d['yn_pre-codea'];
+  if(ca==='yes'){sho('codeA-yes-fields');hid('codeA-no-msg');}
+  else if(ca==='no'){hid('codeA-yes-fields');sho('codeA-no-msg');}
+  if(d['yn_pre-mrt']==='yes') sho('mrt-time-field');
+  if(d['yn_pi-spo2']==='no') sho('pi-spo2-x');
+  if(d['yn_pi-paco2']==='no') sho('pi-paco2-x');
+  if(d['yn_pi-map']==='no') sho('pi-map-x');
+  if(d['yn_pc-spo2']==='yes') sho('pc-spo2-x');
+  if(d['yn_pc-paco2']==='no') sho('pc-paco2-x');
+  if(d['yn_vb-spo2']==='no') sho('vb-spo2-x');
+  if(d['yn_vb-paco2']==='no') sho('vb-paco2-x');
+  if(d['yn_vb-map']==='no') sho('vb-map-x');
+  if(d['yn_vb-nse24']==='no') sho('nse24-x');
+  if(d['yn_vb-nse48']==='no') sho('nse48-x');
+  if(d['yn_vb-nse72']==='no') sho('nse72-x');
+  if(d['cb_pre-newsmews-na']){const e=ge('pre-newsmews'); if(e) e.disabled=true; const disp=ge('pre-newsmews-display'); if(disp) disp.textContent='N/A (Critical Unit)';}
+}
+
+/* ── localStorage wrappers (ใช้ได้ทุกเบราว์เซอร์) ── */
+function lsSet(key,val){ try{localStorage.setItem(key,val);}catch(e){} }
+function lsGet(key){ try{return localStorage.getItem(key);}catch(e){return null;} }
+function lsDel(key){ try{localStorage.removeItem(key);}catch(e){} }
+
+/* ── Temp save ── */
+function tempSave(phase) {
+  ind(phase,'busy','⏳ กำลังบันทึก...');
+  try {
+    lsSet(sk(phase,'data'), JSON.stringify(collect(phase)));
+    ind(phase,'ok','✅ บันทึกชั่วคราวแล้ว');
+    setTimeout(()=>ind(phase,'',''),3000);
+  } catch(e){ ind(phase,'','⚠️ บันทึกไม่สำเร็จ'); }
+}
+
+/* ── Complete phase (no confirm — inline confirm UI used instead) ── */
+function completePhase(phase) {
+  ind(phase,'busy','⏳ กำลังบันทึก...');
+  try {
+    lsSet(sk(phase,'data'), JSON.stringify(collect(phase)));
+    const ts=now();
+    const fb=(ge('filledby-'+phase)||{}).value?.trim()||'';
+    const st={done:true,ts,by:fb};
+    lsSet(sk(phase,'done'), JSON.stringify(st));
+    done[phase]=true;
+    showPhaseDone(phase,st);
+    updateLocks();
+    ind(phase,'ok','✅ บันทึกเสร็จแล้ว — เปิด Section ถัดไปแล้ว');
+    // scroll to next unlocked phase
+    setTimeout(()=>{
+      const next=phase==='s13'?'phase-s4':'phase-s5';
+      const el=ge(next); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    },300);
+  } catch(e){ ind(phase,'','⚠️ บันทึกไม่สำเร็จ: '+e); }
+}
+
+/* ── Complete period ── */
+function completePeriod(period) {
+  ind(period,'busy','⏳ กำลังบันทึก...');
+  try {
+    lsSet(sk(period,'data'), JSON.stringify(collect(period)));
+    const ts=now();
+    const fb=(ge('filledby-'+period)||{}).value?.trim()||'';
+    const st={done:true,ts,by:fb};
+    lsSet(sk(period,'done'), JSON.stringify(st));
+    done[period]=true;
+    showPeriodDone(period,st);
+    updateLocks();
+    const lbl=period==='p1'?'Period 1':'Period 2';
+    ind(period,'ok','✅ บันทึก '+lbl+' เสร็จแล้ว');
+  } catch(e){ ind(period,'','⚠️ บันทึกไม่สำเร็จ: '+e); }
+}
+
+/* ── Edit phase ── */
+function editPhase(phase) {
+  const downstream=phase==='s13'?['s4','p1','p2']:['p1','p2'];
+  lsDel(sk(phase,'done'));
+  done[phase]=false; hidePhaseDone(phase);
+  for(const p of downstream){ lsDel(sk(p,'done')); done[p]=false; hidePhaseDone(p); hidePeriodDone(p); }
+  updateLocks();
+}
+
+function editPeriod(period) {
+  const toReset=period==='p1'?['p1','p2']:[period];
+  for(const p of toReset){ lsDel(sk(p,'done')); done[p]=false; hidePeriodDone(p); }
+  updateLocks();
+}
+
+/* ── Load all ── */
+function loadAll() {
+  for(const phase of['s13','s4','p1','p2']){
+    const raw=lsGet(sk(phase,'data')); if(raw){try{restore(phase,JSON.parse(raw));}catch(e){}}
+    const rawD=lsGet(sk(phase,'done')); if(rawD){try{
+      const st=JSON.parse(rawD);
+      if(st.done){ done[phase]=true; if(['s13','s4'].includes(phase)) showPhaseDone(phase,st); else showPeriodDone(phase,st); }
+    }catch(e){}}
+  }
+  updateLocks(); updateProgress();
+}
+
+function loadByHN() {
+  const v = ge('hn-input').value.trim();
+  if (!v) { alert('กรุณาระบุ HN ก่อน'); return; }
+
+  const safeV = v.replace(/[^a-zA-Z0-9]/g,'_');
+  const hasData = ['s13','s4','p1','p2'].some(p => lsGet('codea-'+safeV+'-'+p+'-data'));
+  const hasDraft = HN === 'draft' && ['s13','s4','p1','p2'].some(p => lsGet(sk(p,'data')));
+
+  if (!hasData && hasDraft) {
+    // Migrate draft data → this HN before resetting
+    const oldHN = HN;
+    const tmp = {};
+    for (const p of ['s13','s4','p1','p2']) {
+      tmp[p+'_data'] = lsGet(sk(p,'data'));
+      tmp[p+'_done'] = lsGet(sk(p,'done'));
+      lsDel(sk(p,'data')); lsDel(sk(p,'done'));
+    }
+    HN = v;
+    for (const p of ['s13','s4','p1','p2']) {
+      if (tmp[p+'_data']) lsSet(sk(p,'data'), tmp[p+'_data']);
+      if (tmp[p+'_done']) lsSet(sk(p,'done'), tmp[p+'_done']);
+    }
+    setHNStatus('ok', '✅ ย้ายข้อมูลที่กรอกค้าง → HN: ' + v);
+  } else {
+    HN = v;
+    setHNStatus(hasData ? 'ok' : 'info', hasData ? '✅ โหลด HN: '+v : '🆕 เริ่มใหม่ HN: '+v);
+  }
+
+  resetForm();
+  loadAll();
+  if (ge('pat-hn') && !ge('pat-hn').value) ge('pat-hn').value = v;
+  ge('hn-input').value = v;
+}
+
+/* ── Auto-sync HN from pat-hn field ── */
+function syncHNFromField(val) {
+  const v = val.trim();
+  if (!v) return;
+  const hnBar = ge('hn-input');
+  if (hnBar && !hnBar.value) {
+    hnBar.value = v;
+    if (HN === 'draft') { HN = v; setHNStatus('ok','✅ HN: '+v); }
+  }
+}
+
+function resetForm() {
+  document.querySelectorAll('input[type=text],input[type=date],input[type=time],input[type=number],select,textarea').forEach(e=>{e.value='';e.disabled=false;});
+  document.querySelectorAll('input[type=checkbox]').forEach(e=>e.checked=false);
+  document.querySelectorAll('.yn-btn.active').forEach(b=>b.classList.remove('active'));
+  ['codeA-yes-fields','codeA-no-msg','mrt-time-field','pi-spo2-x','pi-paco2-x','pi-map-x','pc-spo2-x','pc-paco2-x','vb-spo2-x','vb-paco2-x','vb-map-x','nse24-x','nse48-x','nse72-x'].forEach(hid);
+  ge('pre-newsmews-display').textContent='';
+  Object.keys(done).forEach(k=>done[k]=false);
+  ['s13','s4'].forEach(p=>{hidePhaseDone(p);});
+  ['p1','p2'].forEach(p=>hidePeriodDone(p));
+  updateLocks(); updateProgress();
+}
+
+function clearAll() {
+  for(const p of['s13','s4','p1','p2']){ lsDel(sk(p,'data')); lsDel(sk(p,'done')); }
+  resetForm();
+  setHNStatus('info','🗑️ ล้างข้อมูลแล้ว');
+}
+
+/* ── Lock management ── */
+function updateLocks() {
+  setLock('lock-s4','conn12','conn12-label', done.s13,
+    '✅ Section 1–3 บันทึกเสร็จแล้ว — เปิด Section 4',
+    'Section 4 จะเปิดหลังจาก Section 1–3 บันทึกเสร็จ');
+  setLock('lock-s5','conn23','conn23-label', done.s4,
+    '✅ Section 4 บันทึกเสร็จแล้ว — เปิด Section 5',
+    'Section 5 จะเปิดหลังจาก Section 4 บันทึกเสร็จ');
+  const lp2=ge('lock-p2');
+  if(lp2) lp2.style.display = done.p1 ? 'none' : 'flex';
+}
+function setLock(lockId, connId, lblId, isUnlocked, openTxt, closedTxt) {
+  const lk=ge(lockId), cn=ge(connId), lb=ge(lblId);
+  if(lk) lk.style.display = isUnlocked ? 'none' : 'flex';
+  if(cn){ cn.style.cssText = isUnlocked
+    ? 'display:flex;align-items:center;justify-content:center;height:30px;position:relative;'
+    : 'display:flex;align-items:center;justify-content:center;height:30px;position:relative;';
+    // update connector line color
+    if(isUnlocked) cn.classList.add('done'); else cn.classList.remove('done');
+  }
+  if(lb) lb.textContent = isUnlocked ? openTxt : closedTxt;
+}
+
+/* ── Badge helpers ── */
+function showPhaseDone(ph,st){
+  const b=ge('done-badge-'+ph),t=ge('done-text-'+ph),e=ge('edit-btn-'+ph);
+  if(b)b.classList.add('show'); if(t)t.textContent=(st.by?st.by+' · ':'')+st.ts; if(e)e.style.display='inline-block';
+}
+function hidePhaseDone(ph){
+  const b=ge('done-badge-'+ph),e=ge('edit-btn-'+ph);
+  if(b)b.classList.remove('show'); if(e)e.style.display='none';
+}
+function showPeriodDone(p,st){
+  const m=ge('done-'+p),t=ge('done-text-'+p),e=ge('edit-btn-'+p);
+  if(m)m.classList.add('show'); if(t)t.textContent=(st.by?st.by+' · ':'')+st.ts; if(e)e.style.display='inline-block';
+}
+function hidePeriodDone(p){
+  const m=ge('done-'+p),e=ge('edit-btn-'+p);
+  if(m)m.classList.remove('show'); if(e)e.style.display='none';
+}
+
+/* ── Auto-save ── */
+function schedAuto(phase){ clearTimeout(autoT[phase]); autoT[phase]=setTimeout(()=>tempSave(phase),2000); }
+
+/* ── Utility ── */
+function ge(id){return document.getElementById(id);}
+function qs(sel){return document.querySelector(sel);}
+function sho(id){const e=ge(id);if(e){e.style.display='block';e.style.animation='fadeIn .22s ease';}}
+function hid(id){const e=ge(id);if(e)e.style.display='none';}
+function deact(g){g.querySelectorAll('.yn-btn').forEach(b=>b.classList.remove('active'));}
+function ind(phase,cls,msg){const e=ge('ind-'+phase);if(!e)return;e.className='save-ind'+(cls?' '+cls:'');e.textContent=msg;}
+function now(){return new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});}
+function setHNStatus(cls,msg){const e=ge('hn-status');if(!e)return;e.className='hn-status '+cls;e.style.display='inline';e.textContent=msg;}
+
+/* ── Toggle helpers ── */
+function toggleSection(hdr){hdr.nextElementSibling.classList.toggle('hidden');hdr.classList.toggle('collapsed');}
+function simpleToggle(btn){deact(btn.closest('.yn-group'));btn.classList.add('active');updateProgress();}
+function tShow(btn,val,showId){deact(btn.closest('.yn-group'));btn.classList.add('active');val==='no'?sho(showId):hid(showId);updateProgress();}
+function toggleCodeA(btn,val){deact(btn.closest('.yn-group'));btn.classList.add('active');if(val==='yes'){sho('codeA-yes-fields');hid('codeA-no-msg');}else{hid('codeA-yes-fields');sho('codeA-no-msg');scrollTo('sec-cpr');}updateProgress();}
+function toggleMRT(btn,val){deact(btn.closest('.yn-group'));btn.classList.add('active');val==='yes'?sho('mrt-time-field'):hid('mrt-time-field');updateProgress();}
+function toggleICU(btn,val){deact(btn.closest('.yn-group'));btn.classList.add('active');scrollTo(val==='yes'?'sec-post-cont':'sec-verbal');updateProgress();}
+function tPostCont(btn,val,xId){deact(btn.closest('.yn-group'));btn.classList.add('active');if(xId){val==='no'?sho(xId):hid(xId);}if(val==='no')scrollTo('sec-verbal');updateProgress();}
+function scrollTo(id){const e=ge(id);if(e)setTimeout(()=>e.scrollIntoView({behavior:'smooth',block:'start'}),200);}
+function onNewsMews(inp){if(inp.value)ge('pre-newsmews-na').checked=false;ge('pre-newsmews-display').textContent='';}
+function onNewsMewsNA(cb){const inp=ge('pre-newsmews');inp.disabled=cb.checked;if(cb.checked){inp.value='';ge('pre-newsmews-display').textContent='N/A (Critical Unit)';}else{ge('pre-newsmews-display').textContent='';}}
+
+function updateProgress(){
+  const all=document.querySelectorAll('.yn-group');let ans=0;
+  all.forEach(g=>{if(g.querySelector('.yn-btn.active'))ans++;});
+  const pct=all.length?Math.round(ans/all.length*100):0;
+  ge('progressBar').style.width=pct+'%';
+  ge('progressLabel').textContent='กรอกข้อมูล '+ans+' / '+all.length+' ช่อง';
+  ge('progressPct').textContent=pct+'%';
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  // Attach auto-save
+  ['s13','s4'].forEach(phase=>{
+    ge('phase-'+phase).querySelectorAll('input,select,textarea').forEach(el=>{
+      el.addEventListener('input',()=>schedAuto(phase));
+      el.addEventListener('change',()=>schedAuto(phase));
+    });
+  });
+  [['cpc-1w','notes-p1','filledby-p1'],['cpc-1m','notes-p2','filledby-p2']].forEach((ids,i)=>{
+    const p=i===0?'p1':'p2';
+    ids.forEach(id=>{const el=ge(id);if(el){el.addEventListener('input',()=>schedAuto(p));el.addEventListener('change',()=>schedAuto(p));}});
+  });
+  loadAll();
+});
+</script>
+</body>
+</html>
