@@ -201,6 +201,15 @@ textarea{resize:vertical;min-height:60px;}
   <span style="font-size:.73rem;color:var(--muted);margin-left:auto;">ข้อมูลบันทึกเฉพาะเบราว์เซอร์นี้เท่านั้น</span>
 </div>
 
+<!-- MS Lists Config -->
+<div class="hn-bar" id="lists-config-bar" style="background:#f5f0fb;border-color:#c4b5fd;">
+  <span style="font-size:.82rem;color:#5b21b6;font-weight:700;white-space:nowrap">📋 Microsoft Lists</span>
+  <label style="font-size:.78rem;color:#6d28d9;font-weight:600;white-space:nowrap">Power Automate URL:</label>
+  <input type="text" id="pa-url" style="flex:1;min-width:200px;border-color:#c4b5fd;background:#faf8ff;border:1.5px solid #c4b5fd;border-radius:6px;padding:7px 11px;font-family:inherit;font-size:.84rem;outline:none;" oninput="savePAUrl()">
+  <button class="btn-load" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);white-space:nowrap" onclick="testConnection()">🔌 ทดสอบ</button>
+  <span id="pa-status" style="font-size:.76rem;font-weight:700;min-width:160px"></span>
+</div>
+
 <!-- Progress -->
 <div class="progress-wrap">
   <div class="progress-meta">
@@ -360,6 +369,7 @@ textarea{resize:vertical;min-height:60px;}
       <span class="save-ind" id="ind-s13"></span>
       <button class="btn btn-secondary btn-sm" onclick="tempSave('s13')">💾 บันทึกชั่วคราว</button>
       <button class="btn btn-success" onclick="completePhase('s13')">✅ บันทึก Section 1–3 &amp; ส่งต่อ ICU</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff" onclick="sendToLists('s13')">📋 ส่งไป Lists</button>
     </div>
   </div>
 </div>
@@ -521,6 +531,7 @@ textarea{resize:vertical;min-height:60px;}
       <span class="save-ind" id="ind-s4"></span>
       <button class="btn btn-secondary btn-sm" onclick="tempSave('s4')">💾 บันทึกชั่วคราว</button>
       <button class="btn btn-success" onclick="completePhase('s4')">✅ บันทึก Section 4 &amp; ส่งต่อ Outcome</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff" onclick="sendToLists('s4')">📋 ส่งไป Lists</button>
     </div>
   </div>
 </div>
@@ -559,6 +570,7 @@ textarea{resize:vertical;min-height:60px;}
       <span class="save-ind" id="ind-p1"></span>
       <button class="btn btn-secondary btn-sm" onclick="tempSave('p1')">💾 บันทึกชั่วคราว</button>
       <button class="btn btn-success" onclick="completePeriod('p1')">✅ บันทึก Period 1 (1 สัปดาห์)</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff" onclick="sendToLists('p1')">📋 ส่งไป Lists</button>
     </div>
 
     <!-- Period 2 (sub-locked) -->
@@ -582,6 +594,7 @@ textarea{resize:vertical;min-height:60px;}
         <span class="save-ind" id="ind-p2"></span>
         <button class="btn btn-secondary btn-sm" onclick="tempSave('p2')">💾 บันทึกชั่วคราว</button>
         <button class="btn btn-success" onclick="completePeriod('p2')">✅ บันทึก Period 2 (30 วัน)</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff" onclick="sendToLists('p2')">📋 ส่งไป Lists</button>
       </div>
     </div>
   </div>
@@ -897,7 +910,73 @@ document.addEventListener('DOMContentLoaded',()=>{
     ids.forEach(id=>{const el=ge(id);if(el){el.addEventListener('input',()=>schedAuto(p));el.addEventListener('change',()=>schedAuto(p));}});
   });
   loadAll();
+  loadPAUrl();
 });
+/* ── Microsoft Lists Integration ── */
+const DEFAULT_PA_URL = "https://default395a193340e1411995204d18b413d5.fe.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d6d4f0736a74411992ef121eb3e66cba/triggers/manual/paths/invoke?api-version=1";
+
+function savePAUrl() {
+  try { localStorage.setItem('codea-pa-url', ge('pa-url').value.trim()); } catch(e) {}
+}
+function loadPAUrl() {
+  try {
+    const saved = localStorage.getItem('codea-pa-url') || DEFAULT_PA_URL;
+    const el = ge('pa-url'); if(el) el.value = saved;
+  } catch(e) { const el = ge('pa-url'); if(el) el.value = DEFAULT_PA_URL; }
+}
+function getPAUrl() {
+  const el = ge('pa-url'); return el ? el.value.trim() : DEFAULT_PA_URL;
+}
+function setPAStatus(msg, color) {
+  const el = ge('pa-status'); if(el){ el.textContent=msg; el.style.color=color||'var(--text)'; }
+}
+
+async function testConnection() {
+  const url = getPAUrl();
+  if (!url) { setPAStatus('⚠️ ใส่ URL ก่อน','#b45309'); return; }
+  setPAStatus('⏳ กำลังทดสอบ...','#1a5fa8');
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true}) });
+    setPAStatus('✅ ส่งคำขอได้ — เช็ค Power Automate Run history','#1a7a4a');
+  } catch(e) { setPAStatus('❌ เชื่อมต่อไม่ได้','#c0392b'); }
+}
+
+function buildPayload(phase) {
+  return {
+    HN:           ge('pat-hn')   ? ge('pat-hn').value.trim()   : HN,
+    PatientName:  ge('pat-name') ? ge('pat-name').value.trim() : '',
+    ArrestDate:   ge('pat-date') ? ge('pat-date').value        : '',
+    Phase:        {s13:'Section1-3', s4:'Section4', p1:'Outcome_1week', p2:'Outcome_1month'}[phase]||phase,
+    FilledBy:     (ge('filledby-'+phase)||{}).value||'',
+    Timestamp:    new Date().toISOString(),
+    Location:     ge('pat-loc')  ? ge('pat-loc').value  : '',
+    ROSC:         (()=>{ const g=qs('.yn-group[data-yn="cpr-rosc"]'); if(!g) return ''; const a=g.querySelector('.yn-btn.active'); return a?a.dataset.val:''; })(),
+    FormDataJSON: JSON.stringify(collect(phase))
+  };
+}
+
+async function sendToLists(phase) {
+  const url = getPAUrl();
+  if (!url) { setPAStatus('⚠️ ใส่ URL ก่อน','#b45309'); return; }
+  ind(phase,'busy','📋 กำลังส่งไป Lists...');
+  try {
+    // ใช้ no-cors เพื่อให้ทำงานได้จากทุก origin รวมถึง file:// และ SharePoint
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(buildPayload(phase))
+    });
+    // no-cors ไม่สามารถอ่าน response ได้ แต่ข้อมูลถูกส่งไปแล้ว
+    ind(phase,'ok','✅ ส่งไป Microsoft Lists แล้ว (ตรวจสอบใน Lists)');
+    setPAStatus('✅ ส่ง '+phase.toUpperCase()+' แล้ว — เช็คใน Lists','#1a7a4a');
+    lsSet(sk(phase,'synced'), new Date().toISOString());
+  } catch(e) {
+    ind(phase,'','❌ ส่งไม่ได้: '+e.message);
+    setPAStatus('❌ '+e.message,'#c0392b');
+  }
+}
+
 </script>
 </body>
 </html>
