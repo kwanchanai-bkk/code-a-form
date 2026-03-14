@@ -913,7 +913,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadPAUrl();
 });
 /* ── Microsoft Lists Integration ── */
-const DEFAULT_PA_URL = "https://default395a193340e1411995204d18b413d5.fe.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d6d4f0736a74411992ef121eb3e66cba/triggers/manual/paths/invoke?api-version=1";
+const DEFAULT_PA_URL = '/.netlify/functions/submit';
 
 function savePAUrl() {
   try { localStorage.setItem('codea-pa-url', ge('pa-url').value.trim()); } catch(e) {}
@@ -936,8 +936,9 @@ async function testConnection() {
   if (!url) { setPAStatus('⚠️ ใส่ URL ก่อน','#b45309'); return; }
   setPAStatus('⏳ กำลังทดสอบ...','#1a5fa8');
   try {
-    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true}) });
-    setPAStatus('✅ ส่งคำขอได้ — เช็ค Power Automate Run history','#1a7a4a');
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true}) });
+    const json = await r.json().catch(()=>({}));
+    setPAStatus(r.ok ? '✅ เชื่อมต่อได้' : '⚠️ ตอบ: '+r.status, r.ok?'#1a7a4a':'#b45309');
   } catch(e) { setPAStatus('❌ เชื่อมต่อไม่ได้','#c0392b'); }
 }
 
@@ -961,16 +962,20 @@ async function sendToLists(phase) {
   ind(phase,'busy','📋 กำลังส่งไป Lists...');
   try {
     // ใช้ no-cors เพื่อให้ทำงานได้จากทุก origin รวมถึง file:// และ SharePoint
-    await fetch(url, {
+    const r = await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(buildPayload(phase))
     });
-    // no-cors ไม่สามารถอ่าน response ได้ แต่ข้อมูลถูกส่งไปแล้ว
-    ind(phase,'ok','✅ ส่งไป Microsoft Lists แล้ว (ตรวจสอบใน Lists)');
-    setPAStatus('✅ ส่ง '+phase.toUpperCase()+' แล้ว — เช็คใน Lists','#1a7a4a');
-    lsSet(sk(phase,'synced'), new Date().toISOString());
+    const json = await r.json().catch(()=>({}));
+    if (r.ok && json.success) {
+      ind(phase,'ok','✅ ส่งไป Microsoft Lists แล้ว');
+      setPAStatus('✅ ส่ง '+phase.toUpperCase()+' สำเร็จ','#1a7a4a');
+      lsSet(sk(phase,'synced'), new Date().toISOString());
+    } else {
+      ind(phase,'','⚠️ ส่งไม่สำเร็จ: '+(json.error||r.status));
+      setPAStatus('⚠️ Error: '+(json.error||r.status),'#b45309');
+    }
   } catch(e) {
     ind(phase,'','❌ ส่งไม่ได้: '+e.message);
     setPAStatus('❌ '+e.message,'#c0392b');
